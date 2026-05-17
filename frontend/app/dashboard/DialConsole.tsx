@@ -51,32 +51,32 @@ export function DialConsole({ agents, leads, providerStatus }: DialConsoleProps)
   }, [agentId, leadId, phoneNumber]);
 
   return (
-    <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+    <section className="rounded-xl glass-card p-6 shadow-2xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-heading text-2xl font-bold">Direct Dial</h2>
+          <h2 className="font-heading text-2xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">Direct Dial</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
             Select an agent, enter a customer number, and start an outbound AI loan follow-up call.
           </p>
         </div>
         <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${twilioReady ? "border-[#22C55E]/30 bg-[#22C55E]/10 text-[#BBF7D0]" : "border-[#F59E0B]/30 bg-[#F59E0B]/10 text-amber-100"}`}>
-          {twilioReady ? <RadioTower className="h-4 w-4" aria-hidden="true" /> : <ShieldAlert className="h-4 w-4" aria-hidden="true" />}
+          {twilioReady ? <RadioTower className="h-4 w-4 animate-pulse text-[#22C55E]" aria-hidden="true" /> : <ShieldAlert className="h-4 w-4" aria-hidden="true" />}
           {twilioReady ? "Twilio live dialing ready" : "Needs public webhook for live Twilio dialing"}
         </div>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
         <label className="block">
-          <span className="text-sm text-slate-400">Customer number</span>
+          <span className="text-sm font-semibold text-slate-400">Customer number</span>
           <input
             value={phoneNumber}
             onChange={(event) => setPhoneNumber(event.target.value)}
             placeholder="+919876543210"
-            className="mt-2 h-12 w-full rounded-md border border-white/10 bg-black/30 px-3 font-mono text-sm text-white outline-none focus:border-[#4F46E5]"
+            className="mt-2 h-12 w-full rounded-md border border-white/10 bg-black/40 px-3 font-mono text-sm text-white outline-none focus:border-[#6366f1]"
           />
         </label>
         <label className="block">
-          <span className="text-sm text-slate-400">Lead</span>
+          <span className="text-sm font-semibold text-slate-400">Lead</span>
           <select
             value={leadId}
             onChange={(event) => {
@@ -87,7 +87,7 @@ export function DialConsole({ agents, leads, providerStatus }: DialConsoleProps)
                 setPhoneNumber(lead.phone_number);
               }
             }}
-            className="mt-2 h-12 w-full rounded-md border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-[#4F46E5]"
+            className="mt-2 h-12 w-full rounded-md border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#6366f1]"
           >
             <option value="">New number</option>
             {leads.map((lead) => (
@@ -96,11 +96,11 @@ export function DialConsole({ agents, leads, providerStatus }: DialConsoleProps)
           </select>
         </label>
         <label className="block">
-          <span className="text-sm text-slate-400">AI agent</span>
+          <span className="text-sm font-semibold text-slate-400">AI agent</span>
           <select
             value={agentId}
             onChange={(event) => setAgentId(event.target.value)}
-            className="mt-2 h-12 w-full rounded-md border border-white/10 bg-black/30 px-3 text-sm text-white outline-none focus:border-[#4F46E5]"
+            className="mt-2 h-12 w-full rounded-md border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#6366f1]"
           >
             {agents.map((agent) => (
               <option key={agent.id} value={agent.id}>{agent.name}</option>
@@ -111,7 +111,7 @@ export function DialConsole({ agents, leads, providerStatus }: DialConsoleProps)
           type="button"
           onClick={dial}
           disabled={dialing || !phoneNumber.trim()}
-          className="mt-6 flex h-12 min-w-36 items-center justify-center gap-2 rounded-md bg-[#4F46E5] px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 lg:mt-[26px]"
+          className="mt-6 flex h-12 min-w-36 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_25px_rgba(99,102,241,0.6)] px-5 text-sm font-bold text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 lg:mt-[26px]"
         >
           {dialing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <PhoneCall className="h-4 w-4" aria-hidden="true" />}
           Dial

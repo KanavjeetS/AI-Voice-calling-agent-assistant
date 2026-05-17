@@ -160,9 +160,9 @@ class WhisperSTTClientGroq:
         self._groq = AsyncGroq(api_key=settings.GROQ_API_KEY)
         logger.info("Groq STT client ready")
 
-    async def transcribe(self, pcm_bytes: bytes, language: str = "hi") -> str:
+    async def transcribe(self, pcm_bytes: bytes, language: Optional[str] = None) -> tuple[str, Optional[str]]:
         if self._groq is None:
-            return ""
+            return "", None
         import soundfile as sf
 
         buf = io.BytesIO()
@@ -181,15 +181,22 @@ class WhisperSTTClientGroq:
             response = await self._groq.audio.transcriptions.create(
                 file=("audio.wav", buf, "audio/wav"),
                 model=settings.GROQ_STT_MODEL,
-                language=language,
-                response_format="text",
+                language=language or None,
+                response_format="verbose_json",
             )
-            if isinstance(response, str):
-                return response.strip()
-            return getattr(response, "text", "").strip()
+            # Access verbose_json fields
+            if hasattr(response, "text"):
+                transcript = response.text.strip()
+                detected_lang = getattr(response, "language", None)
+            else:
+                # Fallback if dictionary returned
+                res_dict = dict(response)
+                transcript = res_dict.get("text", "").strip()
+                detected_lang = res_dict.get("language", None)
+            return transcript, detected_lang
         except Exception as exc:
             logger.exception("Groq STT failed: %s", exc)
-            return ""
+            return "", None
 
     async def close(self) -> None:
         if self._groq is not None:
@@ -243,13 +250,36 @@ class GroqSTTStream:
                 audio_data = b"".join(self._audio_buffer)
                 self._audio_buffer = []
                 self._silence_frames = 0
-                lang = "hi" if self.session.detected_language == Language.HINDI else "en"
+                
+                lang = None
+                if self.session.detected_language == Language.HINDI:
+                    lang = "hi"
+                elif self.session.detected_language == Language.ENGLISH:
+                    lang = "en"
                 asyncio.create_task(self._send_to_groq(audio_data, lang))
 
-    async def _send_to_groq(self, pcm_bytes: bytes, language: str) -> None:
-        transcript = await self._groq.transcribe(pcm_bytes, language)
+    async def _send_to_groq(self, pcm_bytes: bytes, language: Optional[str]) -> None:
+        t0 = time.perf_counter()
+        transcript, detected = await self._groq.transcribe(pcm_bytes, language)
+        elapsed_ms = (time.perf_counter() - t0) * 1000
         if transcript:
+            if detected:
+                self._update_language(detected)
+            logger.debug(
+                "[%s] Groq STT transcript=%r latency_ms=%.0f language=%s",
+                self.session.call_sid,
+                transcript,
+                elapsed_ms,
+                detected,
+            )
             await self.on_final(transcript)
+
+    def _update_language(self, detected: str) -> None:
+        detected = detected.lower()
+        if detected == "hi" or detected == "hindi":
+            self.session.detected_language = Language.HINDI
+        elif detected == "en" or detected == "english":
+            self.session.detected_language = Language.ENGLISH
 
     async def close(self) -> None:
         self._closed = True

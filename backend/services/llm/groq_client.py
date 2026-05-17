@@ -83,14 +83,25 @@ class GroqLLMClient:
         full_messages = messages
         if system_prompt:
             full_messages = [{"role": "system", "content": system_prompt}, *messages]
-        response = await self._client.chat.completions.create(
-            model=settings.GROQ_LLM_MODEL,
-            messages=full_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=False,
-        )
-        return response.choices[0].message.content or ""
+        
+        retries = 0
+        while retries <= 2:
+            try:
+                response = await self._client.chat.completions.create(
+                    model=settings.GROQ_LLM_MODEL,
+                    messages=full_messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    stream=False,
+                )
+                return response.choices[0].message.content or ""
+            except Exception as exc:
+                if "rate_limit" in str(exc).lower() and retries < 2:
+                    retries += 1
+                    await asyncio.sleep(2**retries)
+                    continue
+                logger.exception("Groq LLM complete failed: %s", exc)
+                raise
 
     async def close(self) -> None:
         if self._client is not None:

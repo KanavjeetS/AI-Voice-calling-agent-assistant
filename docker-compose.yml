@@ -7,8 +7,8 @@ services:
       MODEL_TIER: ${MODEL_TIER:-free}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       STARTUP_WARM_MODELS: ${STARTUP_WARM_MODELS:-false}
-      DATABASE_URL: postgresql://vahanai:password@postgres:5432/vahanai_voice
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://vahanai:${POSTGRES_PASSWORD:-supersecret123}@postgres:5432/vahanai_voice
+      REDIS_URL: redis://:${REDIS_PASSWORD:-supersecret123}@redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
@@ -31,7 +31,7 @@ services:
     environment:
       POSTGRES_DB: vahanai_voice
       POSTGRES_USER: vahanai
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-supersecret123}
     ports:
       - "5432:5432"
     volumes:
@@ -39,6 +39,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-supersecret123}
     ports:
       - "6379:6379"
 

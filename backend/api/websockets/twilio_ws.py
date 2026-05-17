@@ -5,6 +5,7 @@ import logging
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from core.call_session import Language
 from core.session_registry import session_registry
 from services.stt.whisper_client import stt_client
 from services.tts.kokoro_client import tts_client
@@ -105,6 +106,11 @@ async def twilio_media_stream(websocket: WebSocket) -> None:
                     lead = await crm_store.get_lead(call_record.lead_id)
                     if lead:
                         hindi = lead.language_hint == "hindi"
+                        if hindi:
+                            session.detected_language = Language.HINDI
+                        else:
+                            session.detected_language = Language.ENGLISH
+                        
                         greeting = (
                             f"Hi {lead.name}, this is VahanAI calling about your loan application. Is this a good time?"
                             if not hindi

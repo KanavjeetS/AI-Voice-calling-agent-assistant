@@ -33,3 +33,7 @@ huggingface_cache/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Local audit docs
+*.docx
+audit_content.txt
