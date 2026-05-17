@@ -99,7 +99,7 @@ class PostgresCRMStore:
                         city VARCHAR(255) DEFAULT 'Unknown',
                         status VARCHAR(100) DEFAULT 'new',
                         language_hint VARCHAR(100) DEFAULT 'hinglish',
-                        missing_fields TEXT[],
+                        missing_fields JSONB DEFAULT '[]'::jsonb,
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
@@ -128,13 +128,13 @@ class PostgresCRMStore:
                 if count == 0:
                     logger.info("Seeding initial leads into PostgreSQL...")
                     sample_leads = [
-                        ("lead_1001", "Priya Sharma", "+919876543210", 650000, "Delhi", "new", "hinglish", ["salary_slip", "pan_card"]),
-                        ("lead_1002", "Rahul Mehta", "+919812340987", 1800000, "Mumbai", "new", "hindi", ["bank_statement"]),
-                        ("lead_1003", "Aisha Khan", "+919700111222", 420000, "Bengaluru", "contacted", "hinglish", [])
+                        ("lead_1001", "Priya Sharma", "+919876543210", 650000, "Delhi", "new", "hinglish", json.dumps(["salary_slip", "pan_card"])),
+                        ("lead_1002", "Rahul Mehta", "+919812340987", 1800000, "Mumbai", "new", "hindi", json.dumps(["bank_statement"])),
+                        ("lead_1003", "Aisha Khan", "+919700111222", 420000, "Bengaluru", "contacted", "hinglish", json.dumps([]))
                     ]
                     await conn.executemany("""
                         INSERT INTO leads (id, name, phone_number, loan_amount, city, status, language_hint, missing_fields)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
                     """, sample_leads)
         return self._pool
 
@@ -143,7 +143,7 @@ class PostgresCRMStore:
         async with pool.acquire() as conn:
             await conn.execute("""
                 INSERT INTO leads (id, name, phone_number, loan_amount, city, status, language_hint, missing_fields, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
                 ON CONFLICT (id) DO UPDATE SET
                     name = EXCLUDED.name,
                     phone_number = EXCLUDED.phone_number,
@@ -153,7 +153,7 @@ class PostgresCRMStore:
                     language_hint = EXCLUDED.language_hint,
                     missing_fields = EXCLUDED.missing_fields,
                     created_at = EXCLUDED.created_at
-            """, lead.id, lead.name, lead.phone_number, lead.loan_amount, lead.city, lead.status.value, lead.language_hint, lead.missing_fields, lead.created_at)
+            """, lead.id, lead.name, lead.phone_number, lead.loan_amount, lead.city, lead.status.value, lead.language_hint, json.dumps(lead.missing_fields), lead.created_at)
         return lead
 
     async def list_leads(self) -> List[Lead]:
@@ -169,7 +169,7 @@ class PostgresCRMStore:
                     city=row["city"],
                     status=LeadStatus(row["status"]),
                     language_hint=row["language_hint"],
-                    missing_fields=row["missing_fields"] or [],
+                    missing_fields=json.loads(row["missing_fields"]) if isinstance(row["missing_fields"], str) else (row["missing_fields"] or []),
                     created_at=row["created_at"]
                 ) for row in rows
             ]
@@ -188,7 +188,7 @@ class PostgresCRMStore:
                 city=row["city"],
                 status=LeadStatus(row["status"]),
                 language_hint=row["language_hint"],
-                missing_fields=row["missing_fields"] or [],
+                missing_fields=json.loads(row["missing_fields"]) if isinstance(row["missing_fields"], str) else (row["missing_fields"] or []),
                 created_at=row["created_at"]
             )
 

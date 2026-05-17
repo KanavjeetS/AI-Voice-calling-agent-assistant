@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, PhoneCall, RadioTower, ShieldAlert } from "lucide-react";
 import type { AgentConfig, CallRecord, Lead, ProviderStatus } from "@/types/api";
 
@@ -11,12 +11,17 @@ interface DialConsoleProps {
 }
 
 export function DialConsole({ agents, leads, providerStatus }: DialConsoleProps) {
+  const [mounted, setMounted] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(leads[0]?.phone_number ?? "");
   const [leadId, setLeadId] = useState(leads[0]?.id ?? "");
   const [agentId, setAgentId] = useState(agents[0]?.id ?? "vahan_loan_assistant");
   const [dialing, setDialing] = useState(false);
   const [result, setResult] = useState<CallRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const selectedAgent = useMemo(
     () => agents.find((agent) => agent.id === agentId) ?? agents[0],
@@ -49,6 +54,14 @@ export function DialConsole({ agents, leads, providerStatus }: DialConsoleProps)
       setDialing(false);
     }
   }, [agentId, leadId, phoneNumber]);
+
+  if (!mounted) {
+    return (
+      <section className="rounded-xl glass-card p-6 shadow-2xl bg-white/[0.025] h-48 flex items-center justify-center border border-white/10 animate-pulse">
+        <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-xl glass-card p-6 shadow-2xl">
