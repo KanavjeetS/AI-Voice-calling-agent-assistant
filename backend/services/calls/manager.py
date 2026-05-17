@@ -100,6 +100,9 @@ async def _resolve_lead(phone_number: str, lead_id: str | None) -> Lead:
     if lead_id:
         lead = await crm_store.get_lead(lead_id)
         if lead:
+            if phone_number and lead.phone_number != phone_number:
+                lead.phone_number = phone_number
+                await crm_store.upsert_lead(lead)
             return lead
     for lead in await crm_store.list_leads():
         if lead.phone_number == phone_number:

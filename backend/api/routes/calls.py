@@ -20,7 +20,10 @@ class CustomerTurnRequest(BaseModel):
 
 @router.post("/initiate", response_model=CallRecord)
 async def initiate_call(payload: InitiateCallRequest) -> CallRecord:
-    return await initiate_outbound_call(payload.phone_number, payload.lead_id, payload.agent_id)
+    try:
+        return await initiate_outbound_call(payload.phone_number, payload.lead_id, payload.agent_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("", response_model=list[CallRecord])
